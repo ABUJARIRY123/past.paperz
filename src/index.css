@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+/* Configure dark mode variant for Tailwind v4 */
+@variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  /* Dark mode configuration */
+  .dark {
+    color-scheme: dark;
+  }
+
+  /* Scrollbar styling for light mode */
+  ::-webkit-scrollbar {
+    width: 16px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-gray-800;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-400 dark:bg-gray-600 hover:bg-gray-500 dark:hover:bg-gray-500;
+    border-radius: 0px;
+  }
+
+  ::-webkit-scrollbar-button {
+    height: 20px;
+    @apply bg-gray-200 dark:bg-gray-700;
+  }
+
+@import "tailwindcss";
+
+@theme {
+  --animate-marquee: marquee 30s linear infinite;
+
+  @keyframes marquee {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+}
+
+ .animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+  /* Wire mesh background - light mode */
+  .wire-mesh {
+    background-image: 
+      linear-gradient(45deg, rgba(0,0,0,0.03) 1px, transparent 1px),
+      linear-gradient(-45deg, rgba(0,0,0,0.03) 1px, transparent 1px);
+    background-size: 15px 15px;
+    background-position: 0 0, 0 0;
+    background-repeat: repeat;
+  }
+
+  /* Wire mesh background - dark mode */
+  .dark .wire-mesh {
+    background-image: 
+      linear-gradient(45deg, rgba(255,255,255,0.05) 1px, transparent 1px),
+      linear-gradient(-45deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 15px 15px;
+    background-position: 0 0, 0 0;
+    background-repeat: repeat;
+  }
+
+  /* Smooth transitions for theme switching */
+  * {
+    @apply transition-colors duration-200;
+  }
+}
+
+@layer utilities {
+  /* Add any custom utility classes here */
+}
+
+@layer components {
+  /* Add any custom component classes here */
+}
