@@ -40,7 +40,7 @@ const PREMIUM_ITEMS = [
 const SYSADMIN_ITEMS = [
   { tab: 'overview',  label: 'Overview',     icon: HiChartPie },
   { tab: 'users',     label: 'Users',        icon: HiOutlineUserGroup },
-  { tab: 'papers',    label: 'Manage Papers', icon: HiPencilAlt },
+  { tab: 'papers',    label: 'Papers', icon: HiPencilAlt },
     { tab: 'favourites',  label: 'Favourites',       icon: HiCheckCircle  },
   { tab: 'payments',  label: 'Payments',     icon: HiCurrencyDollar  },
   { tab: 'chats',     label: 'Chats',        icon: HiAnnotation, badge: 'chat' },
