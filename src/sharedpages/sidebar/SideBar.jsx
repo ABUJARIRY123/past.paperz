@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useMemo, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import {
   HiOutlineUserGroup, HiAnnotation, HiChartPie, HiBadgeCheck,
-  HiArchive, HiPencilAlt, HiStatusOnline,HiCog ,
-  HiCurrencyDollar , HiAcademicCap, HiOutlineBookOpen, HiMenu,HiCheckCircle ,
+  HiPencilAlt, HiStatusOnline,
+  HiCurrencyDollar, HiAcademicCap, HiOutlineBookOpen, HiMenu, HiCheckCircle,
   HiOutlineShieldCheck,
 } from 'react-icons/hi';
 import { setSidebarOpen, toggleSidebarCollapsed } from '../../redux/theme/themeSlice';
@@ -17,13 +17,11 @@ import { DASHBOARD_BY_ROLE } from '../../components/roles';
    Set `badge: 'chat'` on any item that should show the unread chat count.
    ───────────────────────────────────────────────────────────────────────────── */
 const FREE_ITEMS = [
-  { tab: 'papers', label: 'Papers', icon: HiOutlineBookOpen },
-  { tab: 'favourites',  label: 'Favourites',       icon: HiCheckCircle  },
-    { tab: 'diamonds',  label: 'Diamonds',       icon: HiCurrencyDollar  },
-      // { tab: 'requests',  label: 'Requests',     icon: HiStatusOnline },
-
-
-  // { tab: 'chats',  label: 'Chats',       icon: HiAnnotation, badge: 'chat' },
+  { tab: 'papers',     label: 'Papers',     icon: HiOutlineBookOpen },
+  { tab: 'favourites', label: 'Favourites', icon: HiCheckCircle },
+  { tab: 'diamonds',   label: 'Diamonds',   icon: HiCurrencyDollar },
+  // { tab: 'requests', label: 'Requests', icon: HiStatusOnline },
+  // { tab: 'chats',    label: 'Chats',    icon: HiAnnotation, badge: 'chat' },
 ];
 
 const MEMBER_ITEMS = [
@@ -38,14 +36,14 @@ const PREMIUM_ITEMS = [
 ];
 
 const SYSADMIN_ITEMS = [
-  { tab: 'overview',  label: 'Overview',     icon: HiChartPie },
-  { tab: 'users',     label: 'Users',        icon: HiOutlineUserGroup },
-  { tab: 'papers',    label: 'Papers', icon: HiPencilAlt },
-    { tab: 'favourites',  label: 'Favourites',       icon: HiCheckCircle  },
-  { tab: 'payments',  label: 'Payments',     icon: HiCurrencyDollar  },
-  { tab: 'chats',     label: 'Chats',        icon: HiAnnotation, badge: 'chat' },
-  { tab: 'documentsrepo', label: 'Documents',    icon: HiOutlineShieldCheck },
-  { tab: 'requests',  label: 'Requests',     icon: HiStatusOnline },
+  { tab: 'overview',      label: 'Overview',   icon: HiChartPie },
+  { tab: 'users',         label: 'Users',      icon: HiOutlineUserGroup },
+  { tab: 'papers',        label: 'Papers',     icon: HiPencilAlt },
+  { tab: 'favourites',    label: 'Favourites', icon: HiCheckCircle },
+  { tab: 'payments',      label: 'Payments',   icon: HiCurrencyDollar },
+  { tab: 'chats',         label: 'Chats',      icon: HiAnnotation, badge: 'chat' },
+  { tab: 'documentsrepo', label: 'Documents',  icon: HiOutlineShieldCheck },
+  { tab: 'requests',      label: 'Requests',   icon: HiStatusOnline },
 ];
 
 const NAV_BY_ROLE = {
@@ -54,6 +52,12 @@ const NAV_BY_ROLE = {
   premium:  PREMIUM_ITEMS,
   sysadmin: SYSADMIN_ITEMS,
 };
+
+const DESKTOP_BREAKPOINT = 768; // Tailwind `md`
+const DEFAULT_NAVBAR_HEIGHT = 76;
+
+/* Small helper to join class names */
+const cx = (...parts) => parts.filter(Boolean).join(' ');
 
 /* ── NavLink ──
    Defined at module level (not inside Sidebar) so React doesn't remount every
@@ -77,44 +81,82 @@ function NavLink({ to, icon: Icon, children, badge = 0, isDefault = false, colla
       data-active={isActive}
       onClick={onNavigate}
       title={collapsed ? String(children) : undefined}
-      className={`
-        nav-link group flex items-center gap-3 rounded-xl text-sm font-medium
-        transition-all duration-200 relative overflow-visible
-        ${collapsed ? 'px-2 py-2.5 justify-center' : 'px-3 py-2.5'}
-        ${isActive ? 'nav-link-active' : 'nav-link-idle'}
-      `}
+      className={cx(
+        // base
+        'group relative flex items-center gap-3 overflow-visible rounded-xl text-sm font-medium',
+        'transition-all duration-200',
+        // press ripple
+        "after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:bg-white",
+        "after:opacity-0 after:transition-opacity after:duration-100 after:content-[''] active:after:opacity-[0.07]",
+        // spacing
+        collapsed ? 'justify-center px-2 py-2.5' : 'px-3 py-2.5',
+        // state
+        isActive
+          ? [
+              'bg-gradient-to-br from-green-600 to-green-700 text-white',
+              'shadow-[0_4px_14px_rgba(22,163,74,0.35)] ring-1 ring-inset ring-green-600/40',
+              'dark:from-green-600/40 dark:to-green-700/30 dark:ring-green-400/40',
+              'dark:shadow-[0_4px_16px_rgba(22,163,74,0.25)]',
+            ].join(' ')
+          : [
+              'text-gray-700 hover:bg-green-100 hover:text-green-700',
+              'dark:text-white/55 dark:hover:bg-green-600/10 dark:hover:text-green-300',
+            ].join(' ')
+      )}
     >
       {isActive && (
         <>
-          <span className="nav-burst-ring" />
-          <span className="nav-burst-ring nav-burst-ring--delay" />
+          <span className="pointer-events-none absolute inset-0 z-0 rounded-xl border-[1.5px] border-green-600/60 motion-reduce:animate-none animate-nav-burst dark:border-green-400/50" />
+          <span className="pointer-events-none absolute inset-0 z-0 rounded-xl border-[1.5px] border-green-600/60 motion-reduce:animate-none animate-nav-burst [animation-delay:1s] dark:border-green-400/50" />
         </>
       )}
 
-      <span className={`
-        relative flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200
-        ${isActive ? 'nav-icon-active' : 'nav-icon-idle group-hover:scale-105'}
-      `}>
-        <Icon className="w-4 h-4 relative z-10" />
+      <span
+        className={cx(
+          'relative flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border transition-all duration-200',
+          isActive
+            ? [
+                'border-white/30 bg-white/25 text-white shadow-[0_0_10px_rgba(255,255,255,0.2)]',
+                'dark:border-green-400/40 dark:bg-gradient-to-br dark:from-green-600/60 dark:to-green-700/50',
+                'dark:shadow-[0_0_10px_rgba(74,222,128,0.3)]',
+              ].join(' ')
+            : [
+                'border-emerald-100 bg-green-50 text-gray-500 group-hover:scale-105',
+                'group-hover:border-green-300 group-hover:bg-green-200 group-hover:text-green-700',
+                'dark:border-white/10 dark:bg-white/5 dark:text-white/35',
+                'dark:group-hover:border-green-600/40 dark:group-hover:bg-green-600/20 dark:group-hover:text-green-400',
+              ].join(' ')
+        )}
+      >
+        <Icon className="relative z-10 h-4 w-4" />
 
         {collapsed && hasBadge && (
-          <span className="nav-badge-dot">{badgeLabel}</span>
+          <span className="absolute -right-1 -top-1 z-[2] flex h-[15px] min-w-[15px] items-center justify-center rounded-full bg-red-500 px-[3px] text-[9px] font-bold leading-none text-white ring-2 ring-white dark:ring-green-950">
+            {badgeLabel}
+          </span>
         )}
       </span>
 
       {!collapsed && (
-        <span className="truncate relative z-10">{children}</span>
+        <span className="relative z-10 truncate">{children}</span>
       )}
 
       {!collapsed && hasBadge && (
-        <span className="ml-auto flex-shrink-0 relative z-10 nav-badge-pill">
+        <span
+          className={cx(
+            'relative z-10 ml-auto flex h-5 min-w-[20px] flex-shrink-0 items-center justify-center rounded-full px-1.5 text-[11px] font-bold',
+            isActive
+              ? 'bg-white text-red-700 ring-2 ring-white/60'
+              : 'bg-red-500 text-white ring-2 ring-white/40'
+          )}
+        >
           {badgeLabel}
         </span>
       )}
 
       {!collapsed && !hasBadge && isActive && (
-        <span className="ml-auto flex-shrink-0 relative z-10">
-          <span className="nav-blink-dot" />
+        <span className="relative z-10 ml-auto flex-shrink-0">
+          <span className="block h-[7px] w-[7px] animate-pulse rounded-full bg-white shadow-[0_0_6px_2px_rgba(255,255,255,0.6)] motion-reduce:animate-none dark:bg-green-400 dark:shadow-[0_0_6px_2px_rgba(74,222,128,0.6)]" />
         </span>
       )}
     </Link>
@@ -122,32 +164,95 @@ function NavLink({ to, icon: Icon, children, badge = 0, isDefault = false, colla
 }
 
 export default function Sidebar({ chatUnreadCount = 0 }) {
-  const dispatch   = useDispatch();
-  const location   = useLocation();
+  const dispatch = useDispatch();
+  const location = useLocation();
   const { currentUser } = useSelector((state) => state.user);
   const { sidebarOpen, sidebarCollapsed } = useSelector((state) => state.theme);
 
-  const [navbarHeight, setNavbarHeight] = React.useState(76);
+  const [navbarHeight, setNavbarHeight] = useState(DEFAULT_NAVBAR_HEIGHT);
+  const [isDesktop, setIsDesktop] = useState(
+    typeof window !== 'undefined' ? window.innerWidth >= DESKTOP_BREAKPOINT : true
+  );
   const scrollRef = useRef(null);
 
-  /* ── Keep navbar height in sync ── */
+  /* ── Track desktop/mobile reactively ── */
   useEffect(() => {
-    const update = () => {
-      const navbar = document.querySelector('.navbar-container');
-      if (navbar) setNavbarHeight(navbar.offsetHeight);
-    };
+    const update = () => setIsDesktop(window.innerWidth >= DESKTOP_BREAKPOINT);
     update();
     window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('orientationchange', update);
+    };
   }, []);
 
-  /* ── Scroll active link into view ── */
-  useEffect(() => {
-    if (scrollRef.current) {
-      const active = scrollRef.current.querySelector('[data-active="true"]');
-      if (active) active.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  /* ── Keep navbar height in sync ──
+     Uses the navbar's real bottom edge, watches it with ResizeObserver, and
+     re-measures when the drawer opens. */
+  useLayoutEffect(() => {
+    const navbar = document.querySelector('.navbar-container');
+    if (!navbar) return undefined;
+
+    const update = () => {
+      const bottom = Math.ceil(navbar.getBoundingClientRect().bottom);
+      const next = bottom > 0 ? bottom : navbar.offsetHeight;
+      if (next > 0) setNavbarHeight((prev) => (prev === next ? prev : next));
+    };
+
+    update();
+
+    let ro;
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(update);
+      ro.observe(navbar);
     }
-  }, [location.pathname, location.search]);
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
+
+    return () => {
+      if (ro) ro.disconnect();
+      window.removeEventListener('resize', update);
+      window.removeEventListener('orientationchange', update);
+    };
+  }, [sidebarOpen]);
+
+  /* ── Scroll active link into view ──
+     scrollIntoView() scrolls every ancestor, including the overflow-hidden
+     <aside>, which hides the first item on mobile. Scroll only the nav. */
+  useEffect(() => {
+    const container = scrollRef.current;
+    if (!container) return;
+    if (!isDesktop && !sidebarOpen) return;
+
+    const active = container.querySelector('[data-active="true"]');
+    if (!active) {
+      container.scrollTop = 0;
+      return;
+    }
+
+    const cRect = container.getBoundingClientRect();
+    const aRect = active.getBoundingClientRect();
+    if (cRect.height === 0) return;
+
+    const pad = 8;
+    if (aRect.top < cRect.top + pad) {
+      container.scrollTo({
+        top: Math.max(0, container.scrollTop - (cRect.top + pad - aRect.top)),
+        behavior: 'smooth',
+      });
+    } else if (aRect.bottom > cRect.bottom - pad) {
+      container.scrollTo({
+        top: container.scrollTop + (aRect.bottom - (cRect.bottom - pad)),
+        behavior: 'smooth',
+      });
+    }
+  }, [location.pathname, location.search, sidebarOpen, isDesktop]);
+
+  /* ── Always start the list at the top when the drawer opens ── */
+  useEffect(() => {
+    if (sidebarOpen && scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, [sidebarOpen]);
 
   const role     = currentUser?.role;
   const basePath = DASHBOARD_BY_ROLE[role];
@@ -161,58 +266,54 @@ export default function Sidebar({ chatUnreadCount = 0 }) {
       {/* Mobile backdrop */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-30 md:hidden"
+          className="fixed inset-0 z-30 bg-black/40 backdrop-blur-sm md:hidden"
           onClick={closeSidebar}
         />
       )}
 
-      {/* ── Sidebar ── Always fixed; never relative ── */}
+      {/* ── Sidebar ── Always fixed; never relative ──
+          top/height depend on the measured navbar, so they stay inline. */}
       <aside
         style={{
-          position: 'fixed',
           top: `${navbarHeight}px`,
-          left: 0,
           height: `calc(100dvh - ${navbarHeight}px)`,
-          width: sidebarCollapsed ? '68px' : '240px',
-          zIndex: 40,
-          display: 'flex',
-          flexDirection: 'column',
-          transform: sidebarOpen || window.innerWidth >= 768 ? 'translateX(0)' : 'translateX(-100%)',
-          transition: 'width 300ms ease-in-out, transform 300ms ease-in-out',
-          overflow: 'hidden',
         }}
-        className={`sidebar-root ${sidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}
+        className={cx(
+          'fixed left-0 z-[45] flex-col overflow-hidden transition-[width] duration-300 ease-in-out',
+          // hidden on mobile until opened; always visible from md up
+          sidebarOpen ? 'flex' : 'hidden md:flex',
+          sidebarCollapsed ? 'w-[68px]' : 'w-[240px]'
+        )}
       >
         {/* Background layer */}
-        <div className="absolute inset-0 sidebar-bg border-r sidebar-border" />
+        <div className="absolute inset-0 border-r border-green-200 bg-gradient-to-b from-white to-green-50 dark:border-green-600/25 dark:from-neutral-950 dark:to-green-950" />
 
         {/* Collapse toggle — desktop only */}
         <button
           onClick={toggleCollapsed}
           aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="
-            relative z-20 hidden md:flex items-center justify-center
-            mx-auto mt-3 mb-1 w-9 h-9 rounded-xl
-            collapse-btn transition-all duration-200
-          "
+          className={cx(
+            'relative z-20 mx-auto mb-1 mt-3 hidden h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border transition-all duration-200 md:flex',
+            'border-green-300 bg-green-50 text-green-600 hover:bg-green-100 hover:text-green-700',
+            'dark:border-green-600/30 dark:bg-green-600/10 dark:text-green-400',
+            'dark:hover:bg-green-600/20 dark:hover:text-green-300'
+          )}
         >
-          <HiMenu className="w-4 h-4" />
+          <HiMenu className="h-4 w-4" />
         </button>
 
-        {/* Scrollable nav — only this element scrolls */}
+        {/* Scrollable nav — only this element scrolls.
+            min-h-0 lets a flex child shrink below its content height;
+            without it the nav overflows the aside and the top gets clipped. */}
         <nav
           ref={scrollRef}
-          className="mt-4 relative z-10 flex-1 sidebar-scroll"
-          style={{
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            WebkitOverflowScrolling: 'touch',
-            padding: sidebarCollapsed ? '0 8px' : '0 12px',
-            paddingBottom: '24px',
-            overscrollBehavior: 'contain',
-          }}
+          className={cx(
+            'relative z-10 min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain pb-8 pt-4',
+            '[-ms-overflow-style:none] [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+            sidebarCollapsed ? 'px-2' : 'px-3'
+          )}
         >
-          <div className="space-y-0.5 pt-2">
+          <div className="space-y-0.5">
             {basePath && items.map((item, i) => (
               <NavLink
                 key={item.tab}
@@ -231,203 +332,8 @@ export default function Sidebar({ chatUnreadCount = 0 }) {
         </nav>
 
         {/* Bottom fade */}
-        <div className="relative z-10 h-8 sidebar-fade-bottom pointer-events-none -mt-8" />
+        <div className="pointer-events-none relative z-10 -mt-8 h-8 flex-shrink-0 bg-gradient-to-t from-green-50 to-transparent dark:from-green-950" />
       </aside>
-
-      <style>{`
-        /* ── Mobile: hide by default, show when open ── */
-        .sidebar-closed { display: none; }
-        .sidebar-open   { display: flex; }
-
-        @media (min-width: 768px) {
-          .sidebar-closed { display: flex; }
-        }
-
-        /* ── Sidebar background ── */
-        .sidebar-bg {
-          background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);
-        }
-        .sidebar-border  { border-color: #bbf7d0; }
-        .section-label   { color: #16a34a; }
-        .collapse-btn {
-          background: #f0fdf4;
-          color: #16a34a;
-          border: 1px solid #86efac;
-        }
-        .collapse-btn:hover {
-          background: #dcfce7;
-          color: #15803d;
-        }
-        .sidebar-fade-bottom {
-          background: linear-gradient(to top, #f0fdf4, transparent);
-        }
-
-        /* ── Nav link idle ── */
-        .nav-link-idle       { color: #374151; }
-        .nav-link-idle:hover { background: #dcfce7; color: #15803d; }
-        .nav-icon-idle {
-          background: #f0fdf4;
-          color: #6b7280;
-          border: 1px solid #d1fae5;
-        }
-        .nav-link-idle:hover .nav-icon-idle {
-          background: #bbf7d0;
-          color: #15803d;
-          border-color: #86efac;
-        }
-
-        /* ── Nav link active ── */
-        .nav-link-active {
-          background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
-          color: #ffffff;
-          box-shadow: 0 4px 14px rgba(22,163,74,0.35), 0 0 0 1px rgba(22,163,74,0.4) inset;
-        }
-        .nav-icon-active {
-          background: rgba(255,255,255,0.25);
-          color: #ffffff;
-          border: 1px solid rgba(255,255,255,0.3);
-          box-shadow: 0 0 10px rgba(255,255,255,0.2);
-        }
-
-        /* ── Unread badge — pill (expanded) ── */
-        .nav-badge-pill {
-          height: 20px;
-          min-width: 20px;
-          padding: 0 6px;
-          border-radius: 9999px;
-          background: #ef4444;
-          color: #ffffff;
-          font-size: 11px;
-          font-weight: 700;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 0 0 2px rgba(255,255,255,0.4);
-        }
-        .nav-link-active .nav-badge-pill {
-          background: #ffffff;
-          color: #b91c1c;
-          box-shadow: 0 0 0 2px rgba(255,255,255,0.6);
-        }
-
-        /* ── Unread badge — dot (collapsed, sits on the icon corner) ── */
-        .nav-badge-dot {
-          position: absolute;
-          top: -4px;
-          right: -4px;
-          height: 15px;
-          min-width: 15px;
-          padding: 0 3px;
-          border-radius: 9999px;
-          background: #ef4444;
-          color: #ffffff;
-          font-size: 9px;
-          font-weight: 700;
-          line-height: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 0 0 2px #ffffff;
-          z-index: 2;
-        }
-        .dark .nav-badge-dot { box-shadow: 0 0 0 2px #052e16; }
-
-        /* ── Dark mode ── */
-        .dark .sidebar-bg {
-          background: linear-gradient(180deg, #0a0a0a 0%, #052e16 100%);
-        }
-        .dark .sidebar-border       { border-color: rgba(22,163,74,0.25); }
-        .dark .section-label        { color: #4ade80; }
-        .dark .collapse-btn {
-          background: rgba(22,163,74,0.1);
-          color: #4ade80;
-          border-color: rgba(22,163,74,0.3);
-        }
-        .dark .collapse-btn:hover {
-          background: rgba(22,163,74,0.2);
-          color: #86efac;
-        }
-        .dark .sidebar-fade-bottom {
-          background: linear-gradient(to top, #052e16, transparent);
-        }
-        .dark .nav-link-idle        { color: rgba(255,255,255,0.55); }
-        .dark .nav-link-idle:hover  { background: rgba(22,163,74,0.12); color: #86efac; }
-        .dark .nav-icon-idle {
-          background: rgba(255,255,255,0.04);
-          color: rgba(255,255,255,0.35);
-          border-color: rgba(255,255,255,0.08);
-        }
-        .dark .nav-link-idle:hover .nav-icon-idle {
-          background: rgba(22,163,74,0.2);
-          color: #4ade80;
-          border-color: rgba(22,163,74,0.4);
-        }
-        .dark .nav-link-active {
-          background: linear-gradient(135deg, rgba(22,163,74,0.4) 0%, rgba(21,128,61,0.3) 100%);
-          color: #ffffff;
-          box-shadow: 0 0 0 1px rgba(74,222,128,0.4) inset, 0 4px 16px rgba(22,163,74,0.25);
-        }
-        .dark .nav-icon-active {
-          background: linear-gradient(135deg, rgba(22,163,74,0.6), rgba(21,128,61,0.5));
-          color: #ffffff;
-          border-color: rgba(74,222,128,0.4);
-          box-shadow: 0 0 10px rgba(74,222,128,0.3);
-        }
-
-        /* ── Scrollbar ── */
-        .sidebar-scroll { scrollbar-width: none; -ms-overflow-style: none; }
-        .sidebar-scroll::-webkit-scrollbar { display: none; }
-
-        /* ── Burst rings ── */
-        .nav-burst-ring {
-          position: absolute;
-          inset: 0;
-          border-radius: 0.75rem;
-          border: 1.5px solid rgba(22,163,74,0.6);
-          animation: nav-burst 2s ease-out infinite;
-          pointer-events: none;
-          z-index: 0;
-        }
-        .dark .nav-burst-ring { border-color: rgba(74,222,128,0.5); }
-        .nav-burst-ring--delay { animation-delay: 1s; }
-        @keyframes nav-burst {
-          0%   { transform: scale(1);    opacity: 0.7; }
-          70%  { transform: scale(1.07); opacity: 0; }
-          100% { transform: scale(1.07); opacity: 0; }
-        }
-
-        /* ── Blinking dot ── */
-        .nav-blink-dot {
-          display: block;
-          width: 7px;
-          height: 7px;
-          border-radius: 50%;
-          background: #ffffff;
-          box-shadow: 0 0 6px 2px rgba(255,255,255,0.6);
-          animation: nav-blink 1.4s ease-in-out infinite;
-        }
-        .dark .nav-blink-dot {
-          background: #4ade80;
-          box-shadow: 0 0 6px 2px rgba(74,222,128,0.6);
-        }
-        @keyframes nav-blink {
-          0%, 100% { opacity: 1; }
-          50%      { opacity: 0.3; }
-        }
-
-        /* ── Press ripple ── */
-        .nav-link::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          border-radius: inherit;
-          background: white;
-          opacity: 0;
-          transition: opacity 0.12s;
-          pointer-events: none;
-        }
-        .nav-link:active::after { opacity: 0.07; }
-      `}</style>
     </>
   );
 }
