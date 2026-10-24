@@ -20,7 +20,7 @@ const FREE_ITEMS = [
   { tab: 'papers', label: 'Papers', icon: HiOutlineBookOpen },
   { tab: 'favourites',  label: 'Favourites',       icon: HiCheckCircle  },
     { tab: 'diamonds',  label: 'Diamonds',       icon: HiCurrencyDollar  },
-      { tab: 'requests',  label: 'Requests',     icon: HiStatusOnline },
+      // { tab: 'requests',  label: 'Requests',     icon: HiStatusOnline },
 
 
   // { tab: 'chats',  label: 'Chats',       icon: HiAnnotation, badge: 'chat' },
