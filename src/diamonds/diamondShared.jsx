@@ -13,8 +13,8 @@ export const ADMIN_BASE = `${ROOT}/api/admin/diamond-purchases`;  // sysadmin ro
 export const MIN_KES = 50;
 export const RATE = 1.2;           // shown to the user; the maths below use integers
 export const UNLOCK_AT = 49;
-export const PAYBILL = "247247";
-export const ACCOUNT = "119889";
+export const PAYBILL = "522522";
+export const ACCOUNT = "1268183342";
 export const CODE_RE = /^[A-Za-z0-9]{10}$/;
 
 // ── API ──────────────────────────────────────────────────────────────────────
